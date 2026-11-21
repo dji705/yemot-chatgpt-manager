@@ -1,0 +1,13 @@
+{
+  "name": "yemot-chatgpt-manager",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Hebrew Yemot HaMashiach system manager",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "dev": "vercel dev",
+    "start": "vercel dev"
+  }
+}
