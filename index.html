@@ -1,0 +1,49 @@
+<!doctype html>
+<html lang="he" dir="rtl">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>מנהל ימות המשיח</title>
+<style>
+:root{font-family:Arial,sans-serif;color:#182230;background:#f3f6fb}*{box-sizing:border-box}body{margin:0}.top{background:#142d4e;color:white;padding:22px max(18px,calc((100% - 1000px)/2))}.top h1{margin:0 0 6px;font-size:25px}.top p{margin:0;color:#d8e5f5}.wrap{max-width:1000px;margin:24px auto;padding:0 16px}.card{background:white;border:1px solid #e0e7ef;border-radius:14px;padding:20px;margin:14px 0;box-shadow:0 3px 14px #19324b0a}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px}label{display:block;font-weight:700;margin:10px 0 5px}input,select,textarea,button{font:inherit;width:100%;padding:11px;border:1px solid #cbd5e1;border-radius:9px}button{background:#1764ad;color:white;border:0;font-weight:700;cursor:pointer;margin-top:12px}button.secondary{background:#e9f1f9;color:#17436e}button.danger{background:#a32d35}button:disabled{opacity:.5;cursor:wait}.muted{color:#64748b;font-size:14px}.hidden{display:none}.result{white-space:pre-wrap;overflow-wrap:anywhere;background:#101b2b;color:#d8e7f7;padding:14px;border-radius:9px;min-height:70px;direction:ltr;text-align:left}.notice{padding:12px;border-radius:9px;background:#fff7df;color:#77520a}.pill{display:inline-block;background:#e8f3ff;color:#18558a;border-radius:20px;padding:5px 10px;font-size:13px}
+</style>
+</head>
+<body>
+<header class="top"><h1>מנהל מערכות ימות המשיח</h1><p>ניהול מערכות, צפייה בשלוחות ובקבצים, ותכנון שינויים עם אישור לפני ביצוע.</p></header>
+<main class="wrap">
+<section class="card">
+<h2>חיבור למערכת</h2>
+<div class="grid"><div><label>שם לזיהוי המערכת</label><input id="label" placeholder="לדוגמה: קו ראשי"></div><div><label>שיטת התחברות</label><select id="authType"><option value="login">מספר מערכת וסיסמת ניהול</option><option value="token">טוקן API</option></select></div></div>
+<div id="loginFields" class="grid"><div><label>מספר מערכת</label><input id="username" autocomplete="off"></div><div><label>סיסמת ניהול</label><input id="password" type="password" autocomplete="off"></div></div>
+<div id="tokenField" class="hidden"><label>טוקן API</label><input id="token" type="password" autocomplete="off"></div>
+<button id="connect">בדיקת חיבור ושמירת מערכת לסשן</button>
+<p class="muted">פרטי ההתחברות נשמרים בזיכרון הסשן של הדפדפן בלבד ונמחקים בסגירת הסשן. אין להדביק אותם בשיחה.</p>
+<div id="systems"></div>
+</section>
+<section class="card">
+<h2>בדיקת שלוחות וקבצים</h2>
+<div class="grid"><div><label>פקודה</label><select id="readCommand"><option value="GetSession">פרטי מערכת</option><option value="GetIVR2Dir">תוכן שלוחה</option><option value="GetIVR2DirStats">נתוני שלוחה</option><option value="GetFile">פרטי קובץ</option><option value="GetTextFile">קריאת קובץ טקסט</option><option value="CheckIfFileExists">בדיקת קיום קובץ</option></select></div><div><label>נתיב (אם נדרש)</label><input id="path" placeholder="ivr2:/1"></div></div>
+<button id="read">בצע בדיקה לקריאה בלבד</button><pre class="result" id="output">עדיין לא בוצעה בקשה.</pre>
+</section>
+<section class="card">
+<h2>תכנון שינוי במערכת</h2>
+<div class="notice">שינויים לא מתבצעים מיד. תחילה נוצרת תוכנית לאישור. פעולות מחיקה דורשות אישור נוסף נפרד.</div>
+<div class="grid"><div><label>פעולה</label><select id="writeCommand"><option value="UpdateExtension">עדכון סוג שלוחה</option><option value="UploadTextFile">העלאת קובץ טקסט</option><option value="FileAction">פעולת קובץ (העתקה/העברה/שינוי שם/מחיקה)</option></select></div><div><label>נתיב</label><input id="writePath" placeholder="ivr2:/1"></div></div>
+<label>פרמטרים נוספים בפורמט JSON</label><textarea id="extra" rows="4" placeholder='{"type":"menu"}'></textarea>
+<button class="secondary" id="plan">הצג תוכנית לאישור</button>
+<div id="approval" class="hidden"><h3>תוכנית הפעולה</h3><pre class="result" id="planText"></pre><button id="execute">אני מאשר — בצע את השינוי</button><div id="deleteBox" class="hidden"><label>לאישור מחיקה הקלד: אני מאשר מחיקה</label><input id="deleteConfirm"></div></div>
+</section>
+<section class="card"><h2>תוצאה</h2><pre class="result" id="globalOutput">מוכן.</pre></section>
+</main>
+<script>
+const $=id=>document.getElementById(id); let active=null, pending=null; const accounts=[];
+function creds(){return active?.credentials}
+function showSystems(){ $("systems").innerHTML=accounts.map((a,i)=>'<button class="secondary" data-i="'+i+'">'+esc(a.name)+' — '+(active===a?'מחוברת':'בחר מערכת')+'</button>').join('');$("systems").querySelectorAll("button").forEach(b=>b.onclick=()=>{active=accounts[+b.dataset.i];$("globalOutput").textContent='נבחרה מערכת: '+active.name;showSystems()})}
+function esc(s){return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]))}
+$("authType").onchange=()=>{$("loginFields").classList.toggle("hidden",$("authType").value!=="login");$("tokenField").classList.toggle("hidden",$("authType").value!=="token")};
+async function api(body){const r=await fetch('/api/yemot',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const d=await r.json();if(!r.ok)throw new Error(d.error||d.message||'הבקשה נכשלה');return d}
+$("connect").onclick=async()=>{try{const credentials=$("authType").value==="token"?{token:$("token").value}:{username:$("username").value,password:$("password").value};const d=await api({command:"GetSession",credentials});if(d.responseStatus!=="OK")throw new Error(d.message||"החיבור נכשל");active={name:$("label").value||d.name||d.username||"מערכת חדשה",credentials,details:d};accounts.push(active);showSystems();$("globalOutput").textContent="החיבור הצליח. "+JSON.stringify(d,null,2)}catch(e){$("globalOutput").textContent=e.message}};
+$("read").onclick=async()=>{try{if(!active)throw new Error("יש לבחור מערכת תחילה");const command=$("readCommand").value;const params=$("path").value?{path:$("path").value}:{};const d=await api({command,credentials:creds(),params});$("output").textContent=JSON.stringify(d,null,2)}catch(e){$("output").textContent=e.message}};
+$("plan").onclick=async()=>{try{if(!active)throw new Error("יש לבחור מערכת תחילה");const command=$("writeCommand").value;let params={};if($("writePath").value)params.path=$("writePath").value;const extra=$("extra").value.trim();if(extra)params={...params,...JSON.parse(extra)};const deletion=command==="FileAction"&&String(params.action||"").toLowerCase().includes("delete");const d=await api({mode:"plan",command,params});pending={command,params,approvalToken:d.approvalToken,deletion};$("planText").textContent=JSON.stringify({מערכת:active.name,פקודה:command,פרמטרים:params,מחיקה:deletion,תוקף:"5 דקות"},null,2);$("approval").classList.remove("hidden");$("deleteBox").classList.toggle("hidden",!deletion)}catch(e){$("globalOutput").textContent=e.message}};
+$("execute").onclick=async()=>{try{if(!active||!pending)throw new Error("אין תוכנית מאושרת");if(pending.deletion&&$("deleteConfirm").value!=="אני מאשר מחיקה")throw new Error("נדרש אישור מחיקה נוסף");const d=await api({command:pending.command,params:pending.params,credentials:creds(),approvalToken:pending.approvalToken,deletionConfirmed:$("deleteConfirm").value});$("globalOutput").textContent=JSON.stringify(d,null,2);pending=null;$("approval").classList.add("hidden")}catch(e){$("globalOutput").textContent=e.message}};
+</script>
+</body></html>
