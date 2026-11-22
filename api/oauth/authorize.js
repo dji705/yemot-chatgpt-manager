@@ -14,7 +14,7 @@ export default async function handler(req, res) {
   if (req.method === "GET") {
     const p = req.query || {};
     const client = validClient(p.client_id);
-    if (p.response_type !== "code" || !client || !client.redirect_uris.includes(p.redirect_uri) || p.code_challenge_method !== "S256" || !/^[A-Za-z0-9_-]{43,128}$/.test(p.code_challenge || "") || (p.resource && p.resource !== RESOURCE)) return json(res, 400, { error: "invalid_request", error_description: "Invalid OAuth authorization request" });
+    if (p.response_type !== "code" || !client || !client.redirect_uris.includes(p.redirect_uri) || p.code_challenge_method !== "S256" || !/^[A-Za-z0-9_-]{43,128}$/.test(p.code_challenge || "") || p.resource !== RESOURCE) return json(res, 400, { error: "invalid_request", error_description: "Invalid OAuth authorization request" });
     return page(res, { ...p, resource: RESOURCE, scope: READ_SCOPE });
   }
   if (req.method !== "POST") return json(res, 405, { error: "method_not_allowed" });
