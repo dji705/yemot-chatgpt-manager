@@ -1,4 +1,4 @@
-import { BASE_URL, RESOURCE, READ_SCOPE, validClient, issueCode, readForm, json } from "../_oauth.js";
+import { RESOURCE, READ_SCOPE, validClient, issueCode, readForm, json, seal } from "../_oauth.js";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function page(res, params, error = "") {
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const response = await fetch("https://www.call2all.co.il/ym/api/Login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
     const data = await response.json();
     if (!response.ok || data.responseStatus !== "OK" || !data.token) return page(res, p, data.message || "ההתחברות לימות המשיח נכשלה");
-    const code = issueCode({ client_id: p.client_id, redirect_uri: p.redirect_uri, challenge: p.code_challenge, resource: RESOURCE, scope: READ_SCOPE, yemot: (await import("../_oauth.js")).seal(data.token), username: data.username || username });
+    const code = issueCode({ client_id: p.client_id, redirect_uri: p.redirect_uri, challenge: p.code_challenge, resource: RESOURCE, scope: READ_SCOPE, yemot: seal(data.token), username: data.username || username });
     const target = new URL(p.redirect_uri);
     target.searchParams.set("code", code);
     if (p.state) target.searchParams.set("state", p.state);
