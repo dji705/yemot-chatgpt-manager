@@ -1,4 +1,4 @@
-import { RESOURCE, READ_SCOPE, verifySigned, unseal } from "./_oauth.js";
+import { RESOURCE, READ_SCOPE, verifySigned, unseal } from "../lib/oauth.js";
 
 const API_BASE = "https://www.call2all.co.il/ym/api/";
 const PROTOCOL_VERSION = "2025-03-26";
