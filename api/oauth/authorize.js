@@ -1,4 +1,4 @@
-import { RESOURCE, READ_SCOPE, validClient, issueCode, readForm, json, seal } from "../../lib/oauth.js";
+import { RESOURCE, READ_SCOPE, OAUTH_SCOPE, validClient, issueCode, readForm, json, seal } from "../../lib/oauth.js";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function page(res, params, error = "") {
@@ -15,7 +15,7 @@ export default async function handler(req, res) {
     const p = req.query || {};
     const client = validClient(p.client_id);
     if (p.response_type !== "code" || !client || !client.redirect_uris.includes(p.redirect_uri) || p.code_challenge_method !== "S256" || !/^[A-Za-z0-9_-]{43,128}$/.test(p.code_challenge || "") || p.resource !== RESOURCE) return json(res, 400, { error: "invalid_request", error_description: "Invalid OAuth authorization request" });
-    return page(res, { ...p, resource: RESOURCE, scope: READ_SCOPE });
+    return page(res, { ...p, resource: RESOURCE, scope: OAUTH_SCOPE });
   }
   if (req.method !== "POST") return json(res, 405, { error: "method_not_allowed" });
   const p = readForm(req);
@@ -28,7 +28,7 @@ export default async function handler(req, res) {
     const response = await fetch("https://www.call2all.co.il/ym/api/Login", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ username, password }) });
     const data = await response.json();
     if (!response.ok || data.responseStatus !== "OK" || !data.token) return page(res, p, data.message || "ההתחברות לימות המשיח נכשלה");
-    const code = issueCode({ client_id: p.client_id, redirect_uri: p.redirect_uri, challenge: p.code_challenge, resource: RESOURCE, scope: READ_SCOPE, yemot: seal(data.token), username: data.username || username });
+    const code = issueCode({ client_id: p.client_id, redirect_uri: p.redirect_uri, challenge: p.code_challenge, resource: RESOURCE, scope: OAUTH_SCOPE, yemot: seal(data.token), username: data.username || username });
     const target = new URL(p.redirect_uri);
     target.searchParams.set("code", code);
     if (p.state) target.searchParams.set("state", p.state);
