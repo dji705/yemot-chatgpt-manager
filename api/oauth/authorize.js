@@ -1,4 +1,4 @@
-import { RESOURCE, READ_SCOPE, validClient, issueCode, readForm, json, seal } from "../_oauth.js";
+import { RESOURCE, READ_SCOPE, validClient, issueCode, readForm, json, seal } from "../../lib/oauth.js";
 
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
 function page(res, params, error = "") {
