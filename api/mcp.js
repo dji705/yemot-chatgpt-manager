@@ -1,3 +1,5 @@
+import { RESOURCE, READ_SCOPE, verifySigned, unseal } from "./_oauth.js";
+
 const API_BASE = "https://www.call2all.co.il/ym/api/";
 const PROTOCOL_VERSION = "2025-03-26";
 
@@ -57,6 +59,7 @@ const TOOLS = [
     }
   }
 ];
+for (const tool of TOOLS) tool.securitySchemes = [{ type: "oauth2", scopes: [READ_SCOPE] }];
 
 function json(res, status, body) {
   res.statusCode = status;
@@ -158,17 +161,21 @@ export default async function handler(req, res) {
   }
 
   if (method === "tools/call") {
-    // Initialization and tool discovery are public; actual Yemot access requires a token.
     const auth = String(req.headers.authorization || "");
     const match = auth.match(/^Bearer\\s+(.+)$/i);
+    const challenge = 'Bearer resource_metadata="https://yemot-chatgpt-manager1.vercel.app/.well-known/oauth-protected-resource", scope="' + READ_SCOPE + '"';
     if (!match) {
-      res.setHeader("WWW-Authenticate", 'Bearer realm="Yemot MCP"');
-      return json(res, 401, rpcError(id, -32001, "נדרש API token של ימות המשיח בכותרת Bearer"));
+      res.setHeader("WWW-Authenticate", challenge);
+      return json(res, 401, rpcError(id, -32001, "נדרשת התחברות OAuth לימות המשיח"));
     }
-    const yemotToken = match[1].trim();
-    if (!yemotToken || yemotToken.length > 500) {
-      return json(res, 401, rpcError(id, -32001, "טוקן לא תקין"));
+    const access = verifySigned(match[1].trim(), "oauth-access");
+    if (!access || access.typ !== "access" || access.exp < Date.now() || access.aud !== RESOURCE || !String(access.scope || "").split(" ").includes(READ_SCOPE)) {
+      res.setHeader("WWW-Authenticate", challenge);
+      return json(res, 401, rpcError(id, -32001, "אסימון הגישה אינו תקף או שפג תוקפו"));
     }
+    let yemotToken;
+    try { yemotToken = unseal(access.yemot); }
+    catch { return json(res, 401, rpcError(id, -32001, "לא ניתן לאמת את פרטי ההתחברות")); }
     const name = params?.name;
     const args = params?.arguments || {};
     try {
