@@ -166,12 +166,12 @@ export default async function handler(req, res) {
     const challenge = 'Bearer resource_metadata="https://yemot-chatgpt-manager1.vercel.app/.well-known/oauth-protected-resource", scope="' + READ_SCOPE + '"';
     if (!match) {
       res.setHeader("WWW-Authenticate", challenge);
-      return json(res, 401, { ...rpcError(id, -32001, "נדרשת התחברות OAuth לימות המשיח"), _meta: { "mcp/www_authenticate": [challenge] } });
+      return json(res, 200, { jsonrpc: "2.0", id, result: { content: [{ type: "text", text: "נדרשת התחברות OAuth לימות המשיח" }], isError: true, _meta: { "mcp/www_authenticate": [challenge] } } });
     }
     const access = verifySigned(match[1].trim(), "oauth-access");
     if (!access || access.typ !== "access" || access.exp < Date.now() || access.aud !== RESOURCE || !String(access.scope || "").split(" ").includes(READ_SCOPE)) {
       res.setHeader("WWW-Authenticate", challenge);
-      return json(res, 401, { ...rpcError(id, -32001, "אסימון הגישה אינו תקף או שפג תוקפו"), _meta: { "mcp/www_authenticate": [challenge] } });
+      return json(res, 200, { jsonrpc: "2.0", id, result: { content: [{ type: "text", text: "אסימון הגישה אינו תקף או שפג תוקפו" }], isError: true, _meta: { "mcp/www_authenticate": [challenge] } } });
     }
     let yemotToken;
     try { yemotToken = unseal(access.yemot); }
