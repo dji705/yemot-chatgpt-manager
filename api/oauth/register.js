@@ -1,4 +1,4 @@
-import { signed, json, oauthError } from "../_oauth.js";
+import { signed, json, oauthError } from "../../lib/oauth.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return oauthError(res, 405, "invalid_request", "POST required");
