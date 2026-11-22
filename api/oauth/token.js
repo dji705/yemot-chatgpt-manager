@@ -1,5 +1,5 @@
 import crypto from "node:crypto";
-import { RESOURCE, validClient, verifySigned, issueAccess, issueRefresh, challengeFor, readForm, json, oauthError, consumeOnce } from "../_oauth.js";
+import { RESOURCE, validClient, verifySigned, issueAccess, issueRefresh, challengeFor, readForm, json, oauthError, consumeOnce } from "../../lib/oauth.js";
 
 export default async function handler(req, res) {
   if (req.method !== "POST") return oauthError(res, 405, "invalid_request", "POST required");
