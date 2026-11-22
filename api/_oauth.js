@@ -75,7 +75,7 @@ export async function consumeOnce(key, ttlSeconds) {
   const url = process.env.UPSTASH_REDIS_REST_URL;
   const token = process.env.UPSTASH_REDIS_REST_TOKEN;
   if (!url || !token) throw new Error("OAuth requires UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN");
-  const endpoint = url.replace(/\\/$/, "") + "/set/" + encodeURIComponent(key) + "/" + encodeURIComponent("1") + "?EX=" + ttlSeconds + "&NX";
+  const endpoint = url.replace(/\/$/, "") + "/set/" + encodeURIComponent(key) + "/" + encodeURIComponent("1") + "?EX=" + ttlSeconds + "&NX";
   const response = await fetch(endpoint, { method: "POST", headers: { Authorization: "Bearer " + token } });
   if (!response.ok) throw new Error("OAuth one-time token storage unavailable");
   const data = await response.json();
