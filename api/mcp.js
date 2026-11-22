@@ -123,15 +123,6 @@ export default async function handler(req, res) {
     return json(res, 405, { error: "Method not allowed" });
   }
 
-  const auth = String(req.headers.authorization || "");
-  const match = auth.match(/^Bearer\s+(.+)$/i);
-  if (!match) {
-    res.setHeader("WWW-Authenticate", 'Bearer realm="Yemot MCP"');
-    return json(res, 401, { error: "נדרש API token של ימות המשיח בכותרת Bearer" });
-  }
-  const yemotToken = match[1].trim();
-  if (!yemotToken || yemotToken.length > 500) return json(res, 401, { error: "טוקן לא תקין" });
-
   let body = req.body;
   if (typeof body === "string") {
     try { body = JSON.parse(body); } catch { return json(res, 400, rpcError(null, -32700, "Invalid JSON")); }
@@ -167,6 +158,17 @@ export default async function handler(req, res) {
   }
 
   if (method === "tools/call") {
+    // Initialization and tool discovery are public; actual Yemot access requires a token.
+    const auth = String(req.headers.authorization || "");
+    const match = auth.match(/^Bearer\\s+(.+)$/i);
+    if (!match) {
+      res.setHeader("WWW-Authenticate", 'Bearer realm="Yemot MCP"');
+      return json(res, 401, rpcError(id, -32001, "נדרש API token של ימות המשיח בכותרת Bearer"));
+    }
+    const yemotToken = match[1].trim();
+    if (!yemotToken || yemotToken.length > 500) {
+      return json(res, 401, rpcError(id, -32001, "טוקן לא תקין"));
+    }
     const name = params?.name;
     const args = params?.arguments || {};
     try {
