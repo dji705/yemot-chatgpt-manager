@@ -11,13 +11,13 @@ export default async function handler(req, res) {
       if (!client || code.client_id !== p.client_id || !client.redirect_uris.includes(p.redirect_uri) || code.redirect_uri !== p.redirect_uri) return oauthError(res, 400, "invalid_grant", "Client or redirect URI mismatch");
       if (!await consumeOnce("oauth:code:" + (await import("node:crypto")).default.createHash("sha256").update(p.code).digest("hex"), 300)) return oauthError(res, 400, "invalid_grant", "Authorization code already used");
       if (!p.code_verifier || challengeFor(p.code_verifier) !== code.challenge) return oauthError(res, 400, "invalid_grant", "PKCE verification failed");
-      if (code.resource !== RESOURCE) return oauthError(res, 400, "invalid_target", "Resource mismatch");
+      if (code.resource !== RESOURCE || (p.resource && p.resource !== RESOURCE)) return oauthError(res, 400, "invalid_target", "Resource mismatch");
       const payload = { sub: code.username, yemot: code.yemot, aud: RESOURCE, scope: code.scope };
       return json(res, 200, { access_token: issueAccess(payload), token_type: "Bearer", expires_in: 3600, refresh_token: issueRefresh(payload), scope: code.scope });
     }
     if (p.grant_type === "refresh_token") {
       const refresh = verifySigned(p.refresh_token, "oauth-refresh");
-      if (!refresh || refresh.typ !== "refresh" || refresh.exp < Date.now() || refresh.aud !== RESOURCE) return oauthError(res, 400, "invalid_grant", "Refresh token expired or invalid");
+      if (!refresh || refresh.typ !== "refresh" || refresh.exp < Date.now() || refresh.aud !== RESOURCE || (p.resource && p.resource !== RESOURCE)) return oauthError(res, 400, "invalid_grant", "Refresh token expired or invalid");
       const crypto = await import("node:crypto");
       if (!await consumeOnce("oauth:refresh:" + crypto.default.createHash("sha256").update(p.refresh_token).digest("hex"), 30 * 24 * 60 * 60)) return oauthError(res, 400, "invalid_grant", "Refresh token already used");
       const client = validClient(p.client_id);
